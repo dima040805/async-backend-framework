@@ -1,16 +1,28 @@
 debug: true
+
 web:
-  host: 127.0.0.1
+  host: "127.0.0.1"
   port: 8000
 
+admin:
+  email: "admin@100k1.com"
+  password: "admin123"
+
 sentry:
-  dsn:
-  env: dev
+  dsn: ""
+  env: "dev"
 
 store: {}
 
 database:
-  url: postgresql://game_user:game_password@localhost:5432/hundred_to_one
+  host: "localhost"
+  port: 5432
+  user: "game_user"
+  password: "game_password"
+  database: "hundred_to_one"
+
+session:
+  key: "3gk3GrGEC3dd98NGQLXOB-GMPS0iDdrOgpmvkaEqyas="
 
 telegram:
   bot_token: "8036402531:AAFWXw80EIf08zaGmsAZji8KE8wpmohj8qc"

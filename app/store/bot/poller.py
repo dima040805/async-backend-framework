@@ -1,11 +1,16 @@
 import asyncio
 import logging
+import typing
 from typing import Optional
+
+if typing.TYPE_CHECKING:
+    from app.web.app import Application
 
 logger = logging.getLogger(__name__)
 
+
 class Poller:
-    def __init__(self, app, manager):
+    def __init__(self, app: "Application", manager):
         self.app = app
         self.manager = manager
         self.is_running = False
@@ -25,7 +30,11 @@ class Poller:
     async def _poll(self):
         while self.is_running:
             try:
-                updates = await self.app.telegram_api.get_updates(
+                if not hasattr(self.app.store, 'telegram_api'):
+                    await asyncio.sleep(1)
+                    continue
+                    
+                updates = await self.app.store.telegram_api.get_updates(
                     offset=self.offset,
                     timeout=30
                 )
@@ -35,8 +44,9 @@ class Poller:
                         await self.manager.handle_update(update)
                         self.offset = update['update_id'] + 1
                 
-                await asyncio.sleep(self.app.config['telegram']['polling_interval'])
+                polling_interval = self.app.config.telegram.polling_interval
+                await asyncio.sleep(polling_interval)
                 
             except Exception as e:
                 logger.error(f"Polling error: {e}")
-                await asyncio.sleep(5)  # Wait before retry
+                await asyncio.sleep(5)
