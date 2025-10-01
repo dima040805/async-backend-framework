@@ -1,5 +1,6 @@
 import logging
 import typing
+
 from app.store.database.base_accessor import BaseAccessor
 
 if typing.TYPE_CHECKING:
@@ -9,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class GameAccessor(BaseAccessor):
-    
     def __init__(self, app: "Application"):
         super().__init__(app)
         self.active_sessions = {}

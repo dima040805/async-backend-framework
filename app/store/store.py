@@ -6,12 +6,12 @@ if typing.TYPE_CHECKING:
 
 class Store:
     def __init__(self, app: "Application"):
-        from app.store.bot.accessor import BotAccessor
-        from app.store.database.database import Database
         from app.store.accessors.admin_accessor import AdminAccessor
+        from app.store.accessors.game_accessor import GameAccessor
         from app.store.accessors.session_accessor import SessionAccessor
         from app.store.accessors.user_accessor import UserAccessor
-        from app.store.accessors.game_accessor import GameAccessor
+        from app.store.bot.accessor import BotAccessor
+        from app.store.database.database import Database
 
         self.app = app
         self.database = Database(app)

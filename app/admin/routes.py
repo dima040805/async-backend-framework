@@ -1,4 +1,4 @@
-from app.admin.views import AdminLoginView, AdminCurrentView
+from app.admin.views import AdminCurrentView, AdminLoginView
 
 
 def setup_admin_routes(app):

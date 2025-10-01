@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -10,18 +10,17 @@ class BotManager:
 
     async def handle_update(self, update: Dict[str, Any]):
         try:
-            if 'message' in update:
-                await self._handle_message(update['message'])
+            if "message" in update:
+                await self._handle_message(update["message"])
         except Exception as e:
             logger.error(f"Error handling update: {e}")
 
     async def _handle_message(self, message: Dict[str, Any]):
-        chat_id = message['chat']['id']
-        text = message.get('text', '').strip()
-        
-        if text and hasattr(self.app.store, 'telegram_api'):
+        chat_id = message["chat"]["id"]
+        text = message.get("text", "").strip()
+
+        if text and hasattr(self.app.store, "telegram_api"):
             await self.app.store.telegram_api.send_message(
-                chat_id=chat_id,
-                text=f"Echo: {text}"
+                chat_id=chat_id, text=f"Echo: {text}"
             )
             logger.info(f"Echoed message to chat {chat_id}: {text}")

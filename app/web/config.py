@@ -1,6 +1,7 @@
+import typing
 from dataclasses import dataclass
 from typing import Optional
-import typing
+
 import yaml
 
 if typing.TYPE_CHECKING:
@@ -19,7 +20,7 @@ class AdminConfig:
 
 
 @dataclass
-class TelegramConfig:  
+class TelegramConfig:
     token: str
     polling_interval: int = 1
 
@@ -37,7 +38,7 @@ class DatabaseConfig:
 class Config:
     session: SessionConfig = None
     admin: AdminConfig = None
-    telegram: TelegramConfig = None  
+    telegram: TelegramConfig = None
     database: DatabaseConfig = None
     debug: bool = False
 
@@ -56,8 +57,8 @@ def setup_config(app: "Application", config_path: str):
         ),
         telegram=TelegramConfig(  # Убедимся что это telegram
             token=raw_config["telegram"]["bot_token"],
-            polling_interval=raw_config["telegram"].get("polling_interval", 1)
+            polling_interval=raw_config["telegram"].get("polling_interval", 1),
         ),
         database=DatabaseConfig(**raw_config["database"]),
-        debug=raw_config.get("debug", False)
+        debug=raw_config.get("debug", False),
     )

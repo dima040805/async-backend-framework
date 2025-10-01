@@ -30,23 +30,22 @@ class Poller:
     async def _poll(self):
         while self.is_running:
             try:
-                if not hasattr(self.app.store, 'telegram_api'):
+                if not hasattr(self.app.store, "telegram_api"):
                     await asyncio.sleep(1)
                     continue
-                    
+
                 updates = await self.app.store.telegram_api.get_updates(
-                    offset=self.offset,
-                    timeout=30
+                    offset=self.offset, timeout=30
                 )
-                
-                if updates.get('ok') and updates.get('result'):
-                    for update in updates['result']:
+
+                if updates.get("ok") and updates.get("result"):
+                    for update in updates["result"]:
                         await self.manager.handle_update(update)
-                        self.offset = update['update_id'] + 1
-                
+                        self.offset = update["update_id"] + 1
+
                 polling_interval = self.app.config.telegram.polling_interval
                 await asyncio.sleep(polling_interval)
-                
+
             except Exception as e:
                 logger.error(f"Polling error: {e}")
                 await asyncio.sleep(5)

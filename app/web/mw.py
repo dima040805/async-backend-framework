@@ -1,5 +1,6 @@
 import json
 import typing
+
 from aiohttp.web import middleware
 from aiohttp.web_exceptions import HTTPException, HTTPUnprocessableEntity
 from aiohttp_apispec import validation_middleware
@@ -30,9 +31,7 @@ async def error_handling_middleware(request, handler):
         )
     except Exception as e:
         return error_json_response(
-            http_status=500, 
-            status="internal_error", 
-            message=str(e)
+            http_status=500, status="internal_error", message=str(e)
         )
 
 
