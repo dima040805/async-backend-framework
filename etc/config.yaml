@@ -8,3 +8,10 @@ sentry:
   env: dev
 
 store: {}
+
+database:
+  url: postgresql://game_user:game_password@localhost:5432/hundred_to_one
+
+telegram:
+  bot_token: "8036402531:AAFWXw80EIf08zaGmsAZji8KE8wpmohj8qc"
+  polling_interval: 1

@@ -31,3 +31,4 @@ pycparser==2.21
 typing_extensions==4.10.0
 webargs==8.4.0
 yarl==1.9.4
+alembic==1.13.1
