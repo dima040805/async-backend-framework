@@ -18,9 +18,9 @@ Base = declarative_base()
 
 class Player(Base):
     __tablename__ = "players"
-
+    
     id = Column(BigInteger, primary_key=True)
-    telegram_id = Column(Integer, unique=True, nullable=False)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)  # ✅ Должно быть BigInteger
     username = Column(String(30))
     rating = Column(Integer, default=1000)
     games_played = Column(Integer, default=0)
@@ -34,22 +34,19 @@ class Player(Base):
     answers = relationship("PlayerAnswer", back_populates="player")
 
 
+
 class GameSession(Base):
     __tablename__ = "game_sessions"
-
+    
     id = Column(Integer, primary_key=True)
-    chat_id = Column(Integer, nullable=False)
-    state = Column(String(15), default="waiting_players")
+    chat_id = Column(BigInteger, nullable=False)  
+    state = Column(String(15), default='waiting_players')
     total_questions = Column(Integer, default=5)
     current_question_number = Column(Integer, default=1)
-    current_question_id = Column(Integer, ForeignKey("questions.id"))
+    current_question_id = Column(Integer, ForeignKey('questions.id'))
     current_question_round = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(
-        DateTime,
-        default=datetime.datetime.utcnow,
-        onupdate=datetime.datetime.utcnow,
-    )
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     # Связи
     current_question = relationship("Question")
@@ -101,7 +98,6 @@ class SessionPlayer(Base):
     final_position = Column(Integer)
     joined_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    # Связи
     player = relationship("Player", back_populates="session_players")
     session = relationship("GameSession", back_populates="session_players")
 
@@ -119,7 +115,6 @@ class PlayerAnswer(Base):
     points_earned = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    # Связи
     player = relationship("Player", back_populates="answers")
     session = relationship("GameSession", back_populates="answers")
     question = relationship("Question", back_populates="answers")
@@ -135,7 +130,6 @@ class Admin(Base):
     )
     is_super_admin = Column(Boolean, default=False)
 
-    # Связи
     player = relationship("Player", back_populates="admin_roles")
     session = relationship("GameSession", back_populates="admins")
 
@@ -158,7 +152,6 @@ class GameState(Base):
     state_data = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    # Связи
     session = relationship("GameSession", back_populates="game_state")
 
 
@@ -172,5 +165,4 @@ class ScheduledEvent(Base):
     event_data = Column(JSON)
     is_completed = Column(Boolean, default=False)
 
-    # Связи
     session = relationship("GameSession", back_populates="scheduled_events")
