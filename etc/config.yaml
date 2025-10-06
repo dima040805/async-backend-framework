@@ -25,5 +25,5 @@ session:
   key: "3gk3GrGEC3dd98NGQLXOB-GMPS0iDdrOgpmvkaEqyas="
 
 telegram:
-  bot_token: "8036402531:AAFWXw80EIf08zaGmsAZji8KE8wpmohj8qc"
+  token: "8036402531:AAFWXw80EIf08zaGmsAZji8KE8wpmohj8qc"
   polling_interval: 1

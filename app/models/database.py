@@ -1,168 +1,95 @@
+from sqlalchemy import Column, Integer, String, BigInteger, Boolean, DateTime, ForeignKey, JSON, Text
+from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
+from typing import Optional, List
 import datetime
 
-from sqlalchemy import (
-    JSON,
-    BigInteger,
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-
-Base = declarative_base()
-
+class Base(DeclarativeBase):
+    pass
 
 class Player(Base):
     __tablename__ = "players"
     
-    id = Column(BigInteger, primary_key=True)
-    telegram_id = Column(BigInteger, unique=True, nullable=False)  # ✅ Должно быть BigInteger
-    username = Column(String(30))
-    rating = Column(Integer, default=1000)
-    games_played = Column(Integer, default=0)
-    wins = Column(Integer, default=0)
-    date_last_game = Column(DateTime)
-    date_created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    username: Mapped[Optional[str]] = mapped_column(String(100))
+    rating: Mapped[int] = mapped_column(Integer, default=1000)
+    games_played: Mapped[int] = mapped_column(Integer, default=0)
+    wins: Mapped[int] = mapped_column(Integer, default=0)
+    total_points: Mapped[int] = mapped_column(Integer, default=0)  # ДОБАВИЛИ
+    date_last_game: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    date_created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
-    # Связи
-    admin_roles = relationship("Admin", back_populates="player")
-    session_players = relationship("SessionPlayer", back_populates="player")
-    answers = relationship("PlayerAnswer", back_populates="player")
-
-
+    session_players: Mapped[List["SessionPlayer"]] = relationship(back_populates="player")
+    answers: Mapped[List["PlayerAnswer"]] = relationship(back_populates="player")
 
 class GameSession(Base):
     __tablename__ = "game_sessions"
     
-    id = Column(Integer, primary_key=True)
-    chat_id = Column(BigInteger, nullable=False)  
-    state = Column(String(15), default='waiting_players')
-    total_questions = Column(Integer, default=5)
-    current_question_number = Column(Integer, default=1)
-    current_question_id = Column(Integer, ForeignKey('questions.id'))
-    current_question_round = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
-
-    # Связи
-    current_question = relationship("Question")
-    admins = relationship("Admin", back_populates="session")
-    session_players = relationship("SessionPlayer", back_populates="session")
-    answers = relationship("PlayerAnswer", back_populates="session")
-    game_state = relationship(
-        "GameState", back_populates="session", uselist=False
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    state: Mapped[str] = mapped_column(Text, default='waiting_players')
+    total_questions: Mapped[int] = mapped_column(Integer, default=5)
+    current_question_number: Mapped[int] = mapped_column(Integer, default=1)
+    current_question_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('questions.id'))
+    current_question_round: Mapped[int] = mapped_column(Integer, default=1)
+    max_rounds_per_question: Mapped[int] = mapped_column(Integer, default=3)  # ДОБАВИЛИ
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
     )
-    scheduled_events = relationship("ScheduledEvent", back_populates="session")
 
+    current_question: Mapped[Optional["Question"]] = relationship("Question")
+    session_players: Mapped[List["SessionPlayer"]] = relationship(back_populates="session")
+    answers: Mapped[List["PlayerAnswer"]] = relationship(back_populates="session")
 
 class Question(Base):
     __tablename__ = "questions"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    text: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    id = Column(Integer, primary_key=True)
-    text = Column(String(70), nullable=False)
-    is_active = Column(Boolean, default=True)
-
-    # Связи
-    answer_variants = relationship("AnswerVariant", back_populates="question")
-    game_sessions = relationship(
-        "GameSession", back_populates="current_question"
-    )
-    answers = relationship("PlayerAnswer", back_populates="question")
-
+    answer_variants: Mapped[List["AnswerVariant"]] = relationship(back_populates="question")
+    game_sessions: Mapped[List["GameSession"]] = relationship(back_populates="current_question")
 
 class AnswerVariant(Base):
     __tablename__ = "answer_variants"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    question_id: Mapped[int] = mapped_column(Integer, ForeignKey('questions.id'), nullable=False)
+    text: Mapped[str] = mapped_column(String(100), nullable=False)
+    points: Mapped[int] = mapped_column(Integer, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    id = Column(Integer, primary_key=True)
-    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
-    text = Column(String(20), nullable=False)
-    points = Column(Integer, nullable=False)
-    position = Column(Integer, nullable=False)
-
-    # Связи
-    question = relationship("Question", back_populates="answer_variants")
-
+    question: Mapped["Question"] = relationship(back_populates="answer_variants")
 
 class SessionPlayer(Base):
     __tablename__ = "session_players"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('players.id'), nullable=False)
+    session_id: Mapped[int] = mapped_column(Integer, ForeignKey('game_sessions.id'), nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    final_score: Mapped[int] = mapped_column(Integer, default=0)
+    final_position: Mapped[Optional[int]] = mapped_column(Integer)
+    joined_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
-    session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
-    is_admin = Column(Boolean, default=False)
-    final_score = Column(Integer, default=0)
-    final_position = Column(Integer)
-    joined_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    player = relationship("Player", back_populates="session_players")
-    session = relationship("GameSession", back_populates="session_players")
-
+    player: Mapped["Player"] = relationship(back_populates="session_players")
+    session: Mapped["GameSession"] = relationship(back_populates="session_players")
 
 class PlayerAnswer(Base):
     __tablename__ = "player_answers"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('players.id'), nullable=False)
+    session_id: Mapped[int] = mapped_column(Integer, ForeignKey('game_sessions.id'), nullable=False)
+    round: Mapped[int] = mapped_column(Integer, default=1)
+    question_id: Mapped[int] = mapped_column(Integer, ForeignKey('questions.id'), nullable=False)
+    answer_text: Mapped[str] = mapped_column(String(100), nullable=False)
+    normalized_text: Mapped[Optional[str]] = mapped_column(String(100))
+    points_earned: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
-    id = Column(Integer, primary_key=True)
-    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
-    session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
-    round = Column(Integer, default=1)
-    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
-    answer_text = Column(String(50), nullable=False)
-    normalized_text = Column(String(50))
-    points_earned = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    player = relationship("Player", back_populates="answers")
-    session = relationship("GameSession", back_populates="answers")
-    question = relationship("Question", back_populates="answers")
-
-
-class Admin(Base):
-    __tablename__ = "admins"
-
-    id = Column(BigInteger, primary_key=True)
-    player_id = Column(BigInteger, ForeignKey("players.id"), nullable=False)
-    session_id = Column(
-        BigInteger, ForeignKey("game_sessions.id"), nullable=False
-    )
-    is_super_admin = Column(Boolean, default=False)
-
-    player = relationship("Player", back_populates="admin_roles")
-    session = relationship("GameSession", back_populates="admins")
-
-
-class WebAdmin(Base):
-    __tablename__ = "web_admins"
-
-    id = Column(BigInteger, primary_key=True)
-    email = Column(String(100), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    is_active = Column(Boolean, default=True)
-    permissions = Column(String(50), default="viewer")
-
-
-class GameState(Base):
-    __tablename__ = "game_states"
-
-    id = Column(Integer, primary_key=True)
-    session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
-    state_data = Column(JSON, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    session = relationship("GameSession", back_populates="game_state")
-
-
-class ScheduledEvent(Base):
-    __tablename__ = "scheduled_events"
-
-    id = Column(Integer, primary_key=True)
-    session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
-    event_type = Column(String(50), nullable=False)
-    execute_at = Column(DateTime, nullable=False)
-    event_data = Column(JSON)
-    is_completed = Column(Boolean, default=False)
-
-    session = relationship("GameSession", back_populates="scheduled_events")
+    player: Mapped["Player"] = relationship(back_populates="answers")
+    session: Mapped["GameSession"] = relationship(back_populates="answers")
+    question: Mapped["Question"] = relationship("Question")
