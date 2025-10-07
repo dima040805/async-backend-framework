@@ -1,7 +1,6 @@
-import typing
 from dataclasses import dataclass
 from typing import Optional
-
+import typing
 import yaml
 
 if typing.TYPE_CHECKING:
@@ -48,17 +47,9 @@ def setup_config(app: "Application", config_path: str):
         raw_config = yaml.safe_load(f)
 
     app.config = Config(
-        session=SessionConfig(
-            key=raw_config["session"]["key"],
-        ),
-        admin=AdminConfig(
-            email=raw_config["admin"]["email"],
-            password=raw_config["admin"]["password"],
-        ),
-        telegram=TelegramConfig(  # Убедимся что это telegram
-            token=raw_config["telegram"]["bot_token"],
-            polling_interval=raw_config["telegram"].get("polling_interval", 1),
-        ),
+        session=SessionConfig(**raw_config["session"]), 
+        admin=AdminConfig(**raw_config["admin"]),        
+        telegram=TelegramConfig(**raw_config["telegram"]),
         database=DatabaseConfig(**raw_config["database"]),
-        debug=raw_config.get("debug", False),
+        debug=raw_config.get("debug", False)
     )
