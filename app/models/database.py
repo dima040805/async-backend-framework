@@ -29,9 +29,7 @@ class Player(Base):
     games_played: Mapped[int] = mapped_column(Integer, default=0)
     wins: Mapped[int] = mapped_column(Integer, default=0)
     total_points: Mapped[int] = mapped_column(Integer, default=0)
-    date_last_game: Mapped[datetime.datetime | None] = mapped_column(
-        DateTime
-    )
+    date_last_game: Mapped[datetime.datetime | None] = mapped_column(DateTime)
     date_created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=datetime.datetime.utcnow
     )

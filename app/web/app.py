@@ -19,14 +19,12 @@ class Application(AiohttpApplication):
 
 
 class Request(AiohttpRequest):
-
     @property
     def app(self) -> "Application":
         return super().app()
 
 
 class View(AiohttpView):
-
     @property
     def request(self) -> Request:
         return super().request
@@ -41,7 +39,7 @@ class View(AiohttpView):
 
 
 def setup_app(config_path: str) -> Application:
-        # ruff: noqa: PLC0415
+    # ruff: noqa: PLC0415
     from aiohttp_apispec import setup_aiohttp_apispec
     from aiohttp_session import setup as session_setup
     from aiohttp_session.cookie_storage import EncryptedCookieStorage

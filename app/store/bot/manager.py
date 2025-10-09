@@ -18,7 +18,7 @@ class BotManager:
 
     async def handle_update(self, update: dict[str, Any]):
         try:
-            logger.info("Received update: %s", update.get('update_id'))
+            logger.info("Received update: %s", update.get("update_id"))
 
             if "message" in update:
                 await self._handle_message(update["message"])
@@ -36,7 +36,10 @@ class BotManager:
 
         logger.info(
             "Callback from user %s (@%s): %s in chat %s",
-            user_id, username, data, chat_id
+            user_id,
+            username,
+            data,
+            chat_id,
         )
 
         if data == "join_game":
@@ -69,7 +72,10 @@ class BotManager:
 
             logger.info(
                 "Message from user %s (@%s): '%s' in chat %s",
-                user_id, username, text, chat_id
+                user_id,
+                username,
+                text,
+                chat_id,
             )
 
             if not text:
@@ -99,11 +105,7 @@ class BotManager:
         self, chat_id: int, text: str, buttons: list[dict]
     ):
         try:
-            keyboard = {
-                "inline_keyboard": [
-                    list(row) for row in buttons
-                ]
-            }
+            keyboard = {"inline_keyboard": [list(row) for row in buttons]}
 
             await self.app.store.telegram_api.send_message(
                 chat_id=chat_id, text=text, reply_markup=keyboard
@@ -113,9 +115,7 @@ class BotManager:
             logger.error("Error sending inline keyboard")
 
     async def _handle_new_game(self, chat_id: int, user_id: int, username: str):
-        logger.info(
-            "Creating new game by user %s in chat %s", user_id, chat_id
-        )
+        logger.info("Creating new game by user %s in chat %s", user_id, chat_id)
         session = await self.app.store.game_accessor.create_session(
             chat_id, user_id, username
         )
@@ -123,7 +123,10 @@ class BotManager:
         if session:
             buttons = [
                 [
-                {"text": "🎮 Добавиться в игру", "callback_data": "join_game"}
+                    {
+                        "text": "🎮 Добавиться в игру",
+                        "callback_data": "join_game",
+                    }
                 ],
                 [{"text": "🚀 Старт сейчас", "callback_data": "start_now"}],
                 [{"text": "📊 Статус игры", "callback_data": "status"}],
@@ -143,9 +146,7 @@ class BotManager:
             )
 
             await self._send_inline_keyboard(chat_id, response, buttons)
-            logger.info(
-                "Game session created successfully in chat %s", chat_id
-            )
+            logger.info("Game session created successfully in chat %s", chat_id)
         else:
             response = (
                 "❌ В этом чате уже есть активная игра! "
@@ -165,16 +166,17 @@ class BotManager:
             logger.info(
                 "User %s starting game now in chat %s", user_id, chat_id
             )
-            success, status = (
-                await self.app.store.game_accessor.admin_start_game(
-                    chat_id, user_id
-                )
+            (
+                success,
+                status,
+            ) = await self.app.store.game_accessor.admin_start_game(
+                chat_id, user_id
             )
 
             await self.app.store.telegram_api.answer_callback_query(
                 callback_query_id,
-                "✅ Игра запущена!" 
-                if success 
+                "✅ Игра запущена!"
+                if success
                 else "❌ Не удалось запустить игру",
             )
 
@@ -282,24 +284,21 @@ class BotManager:
                     f"👥 Игроков: {players_count}/8"
                 )
             return (
-                f"🎉 @{username} не присоединился к игре! "
-                f"👥 Игроков: 0/8"
+                f"🎉 @{username} не присоединился к игре! " f"👥 Игроков: 0/8"
             )
 
     async def _handle_continue_guessing(
         self, chat_id: int, user_id: int, username: str, callback_query_id: str
     ):
-        logger.info(
-            "User %s continuing game in chat %s", user_id, chat_id
-        )
+        logger.info("User %s continuing game in chat %s", user_id, chat_id)
         success = await self.app.store.game_accessor.continue_guessing(
             chat_id, user_id
         )
 
         await self.app.store.telegram_api.answer_callback_query(
             callback_query_id,
-            "✅ Продолжаем угадывать!" 
-            if success 
+            "✅ Продолжаем угадывать!"
+            if success
             else "❌ Не удалось продолжить",
         )
 
@@ -324,20 +323,18 @@ class BotManager:
 
         await self.app.store.telegram_api.answer_callback_query(
             callback_query_id,
-            "✅ Переходим к следующему вопросу!" 
-            if success 
+            "✅ Переходим к следующему вопросу!"
+            if success
             else "❌ Не удалось перейти",
         )
 
         if success:
             logger.info(
-                "Moved to next question by user %s in chat %s", 
-                user_id, chat_id
+                "Moved to next question by user %s in chat %s", user_id, chat_id
             )
         else:
             logger.warning(
-                "Next question failed for user %s in chat %s", 
-                user_id, chat_id
+                "Next question failed for user %s in chat %s", user_id, chat_id
             )
 
     async def _handle_leaderboard(self, chat_id: int, callback_query_id: str):
@@ -384,15 +381,18 @@ class BotManager:
 
     async def _check_active_game(self, chat_id: int) -> bool:
         try:
-
             async with self.app.store.database.session() as session:
                 game_session_result = await session.execute(
                     select(GameSession).where(
                         GameSession.chat_id == chat_id,
-                        GameSession.state.in_([
-                            "question_start", "accepting_answers", 
-                            "showing_results", "round_transition"
-                        ]),
+                        GameSession.state.in_(
+                            [
+                                "question_start",
+                                "accepting_answers",
+                                "showing_results",
+                                "round_transition",
+                            ]
+                        ),
                     )
                 )
                 active = game_session_result.first() is not None
@@ -408,9 +408,7 @@ class BotManager:
         self, chat_id: int, user_id: int, username: str
     ):
         try:
-            logger.info(
-                "User %s stopping game in chat %s", user_id, chat_id
-            )
+            logger.info("User %s stopping game in chat %s", user_id, chat_id)
             status = await self.app.store.game_accessor.stop_game(
                 chat_id, user_id
             )
@@ -444,8 +442,10 @@ class BotManager:
     ):
         try:
             logger.info(
-                "User %s submitting answer in chat %s: '%s'", 
-                user_id, chat_id, answer_text
+                "User %s submitting answer in chat %s: '%s'",
+                user_id,
+                chat_id,
+                answer_text,
             )
             result = await self.app.store.game_accessor.submit_answer(
                 chat_id, user_id, answer_text
@@ -463,6 +463,4 @@ class BotManager:
         await self.app.store.telegram_api.send_message(
             chat_id=chat_id, text=message
         )
-        logger.error(
-            "Sent error message to chat %s: %s", chat_id, message
-        )
+        logger.error("Sent error message to chat %s: %s", chat_id, message)

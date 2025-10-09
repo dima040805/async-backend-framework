@@ -94,9 +94,7 @@ class GameAccessor(BaseAccessor):
             game_session_row = game_session_result.first()
 
             if game_session_row:
-                logger.info(
-                    "Timer FINISHED: %s in chat %s", timer_id, chat_id
-                )
+                logger.info("Timer FINISHED: %s in chat %s", timer_id, chat_id)
                 await self._finish_round(chat_id)
             else:
                 logger.info(
@@ -122,19 +120,19 @@ class GameAccessor(BaseAccessor):
                 existing_session = await session.execute(
                     select(GameSession).where(
                         GameSession.chat_id == chat_id,
-                        GameSession.state.in_([
-                            "waiting_players",
-                            "question_start",
-                            "accepting_answers",
-                            "showing_results",
-                            "round_transition",
-                        ]),
+                        GameSession.state.in_(
+                            [
+                                "waiting_players",
+                                "question_start",
+                                "accepting_answers",
+                                "showing_results",
+                                "round_transition",
+                            ]
+                        ),
                     )
                 )
                 if existing_session.first():
-                    logger.warning(
-                        "Active session exists in chat %s", chat_id
-                    )
+                    logger.warning("Active session exists in chat %s", chat_id)
                     return None
 
                 player = await session.execute(
@@ -188,9 +186,7 @@ class GameAccessor(BaseAccessor):
                 )
 
                 _ = asyncio.create_task(
-                    self._waiting_players_timer(
-                        game_session.id, chat_id, 60
-                    )
+                    self._waiting_players_timer(game_session.id, chat_id, 60)
                 )
 
                 return game_session
@@ -264,9 +260,7 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No waiting session for chat %s", chat_id
-                    )
+                    logger.warning("No waiting session for chat %s", chat_id)
                     return False
 
                 game_session = game_session_row[0]
@@ -288,9 +282,7 @@ class GameAccessor(BaseAccessor):
 
                 question = await self._get_random_question(session)
                 if not question:
-                    logger.error(
-                        "No active questions for chat %s", chat_id
-                    )
+                    logger.error("No active questions for chat %s", chat_id)
                     return False
 
                 game_session.state = "question_start"
@@ -299,20 +291,14 @@ class GameAccessor(BaseAccessor):
                 game_session.current_question_id = question.id
                 await session.commit()
 
-                await self._send_question_to_chat(
-                    chat_id, question, 1, 1
-                )
+                await self._send_question_to_chat(chat_id, question, 1, 1)
 
                 game_session.state = "accepting_answers"
                 await session.commit()
 
-                _ = asyncio.create_task(
-                    self._round_timer(chat_id, 45)
-                )
+                _ = asyncio.create_task(self._round_timer(chat_id, 45))
 
-                logger.info(
-                    "First question started in chat %s", chat_id
-                )
+                logger.info("First question started in chat %s", chat_id)
                 return True
 
         except Exception:
@@ -364,9 +350,7 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No active game for chat %s", chat_id
-                    )
+                    logger.warning("No active game for chat %s", chat_id)
                     return
 
                 game_session = game_session_row[0]
@@ -374,9 +358,8 @@ class GameAccessor(BaseAccessor):
                 answers_result = await session.execute(
                     select(PlayerAnswer).where(
                         PlayerAnswer.session_id == game_session.id,
-                        PlayerAnswer.round == (
-                            game_session.current_question_round
-                        ),
+                        PlayerAnswer.round
+                        == (game_session.current_question_round),
                     )
                 )
                 answers = answers_result.scalars().all()
@@ -384,9 +367,8 @@ class GameAccessor(BaseAccessor):
                 variants_result = await session.execute(
                     select(AnswerVariant)
                     .where(
-                        AnswerVariant.question_id == (
-                            game_session.current_question_id
-                        )
+                        AnswerVariant.question_id
+                        == (game_session.current_question_id)
                     )
                     .order_by(AnswerVariant.position)
                 )
@@ -401,12 +383,10 @@ class GameAccessor(BaseAccessor):
                 already_guessed_variants_result = await session.execute(
                     select(PlayerAnswer).where(
                         PlayerAnswer.session_id == game_session.id,
-                        PlayerAnswer.question_id == (
-                            game_session.current_question_id
-                        ),
-                        PlayerAnswer.round < (
-                            game_session.current_question_round
-                        ),
+                        PlayerAnswer.question_id
+                        == (game_session.current_question_id),
+                        PlayerAnswer.round
+                        < (game_session.current_question_round),
                         PlayerAnswer.points_earned > 0,
                     )
                 )
@@ -429,9 +409,7 @@ class GameAccessor(BaseAccessor):
 
                 for variant in all_variants:
                     variant_answers = []
-                    normalized_variant = self._normalize_answer(
-                        variant.text
-                    )
+                    normalized_variant = self._normalize_answer(variant.text)
 
                     if normalized_variant in already_guessed_texts:
                         logger.info(
@@ -459,12 +437,14 @@ class GameAccessor(BaseAccessor):
                             )
                             player = player_result.scalar_one()
 
-                            variant_answers.append({
-                                "player_id": player.id,
-                                "telegram_id": player.telegram_id,
-                                "username": player.username,
-                                "answer_id": answer.id,
-                            })
+                            variant_answers.append(
+                                {
+                                    "player_id": player.id,
+                                    "telegram_id": player.telegram_id,
+                                    "username": player.username,
+                                    "answer_id": answer.id,
+                                }
+                            )
 
                     if variant_answers:
                         points_per_player = variant.points
@@ -477,9 +457,8 @@ class GameAccessor(BaseAccessor):
                         for answer_info in variant_answers:
                             answer_update = await session.execute(
                                 select(PlayerAnswer).where(
-                                    PlayerAnswer.id == (
-                                        answer_info["answer_id"]
-                                    )
+                                    PlayerAnswer.id
+                                    == (answer_info["answer_id"])
                                 )
                             )
                             player_answer = answer_update.scalar_one()
@@ -487,36 +466,32 @@ class GameAccessor(BaseAccessor):
 
                             session_player_update = await session.execute(
                                 select(SessionPlayer).where(
-                                    SessionPlayer.player_id == (
-                                        answer_info["player_id"]
-                                    ),
-                                    SessionPlayer.session_id == (
-                                        game_session.id
-                                    ),
+                                    SessionPlayer.player_id
+                                    == (answer_info["player_id"]),
+                                    SessionPlayer.session_id
+                                    == (game_session.id),
                                 )
                             )
-                            session_player = (
-                                session_player_update.scalar_one()
-                            )
+                            session_player = session_player_update.scalar_one()
                             session_player.final_score += points_per_player
 
-                        round_scored_variants.append({
-                            "variant": variant,
-                            "answers": variant_answers,
-                            "points_per_player": points_per_player,
-                        })
+                        round_scored_variants.append(
+                            {
+                                "variant": variant,
+                                "answers": variant_answers,
+                                "points_per_player": points_per_player,
+                            }
+                        )
                         newly_revealed_variant_ids.append(variant.id)
 
                 game_session.state = "showing_results"
                 await session.commit()
 
-                await self._show_all_round_results(
-                    chat_id, game_session
-                )
+                await self._show_all_round_results(chat_id, game_session)
 
-                all_variants_revealed = len(
-                    newly_revealed_variant_ids
-                ) == len(all_variants)
+                all_variants_revealed = len(newly_revealed_variant_ids) == len(
+                    all_variants
+                )
                 max_rounds_reached = (
                     game_session.current_question_round
                     >= game_session.max_rounds_per_question
@@ -527,9 +502,7 @@ class GameAccessor(BaseAccessor):
                 else:
                     game_session.state = "round_transition"
                     await session.commit()
-                    await self._ask_admin_decision(
-                        chat_id, game_session
-                    )
+                    await self._ask_admin_decision(chat_id, game_session)
 
         except Exception:
             logger.exception("Error finishing round")
@@ -541,9 +514,8 @@ class GameAccessor(BaseAccessor):
             variants_result = await session.execute(
                 select(AnswerVariant)
                 .where(
-                    AnswerVariant.question_id == (
-                        game_session.current_question_id
-                    )
+                    AnswerVariant.question_id
+                    == (game_session.current_question_id)
                 )
                 .order_by(AnswerVariant.position)
             )
@@ -552,9 +524,8 @@ class GameAccessor(BaseAccessor):
             all_answers_result = await session.execute(
                 select(PlayerAnswer).where(
                     PlayerAnswer.session_id == game_session.id,
-                    PlayerAnswer.question_id == (
-                        game_session.current_question_id
-                    ),
+                    PlayerAnswer.question_id
+                    == (game_session.current_question_id),
                 )
             )
             all_answers = all_answers_result.scalars().all()
@@ -574,14 +545,11 @@ class GameAccessor(BaseAccessor):
                         answer.answer_text
                     ) == self._normalize_answer(variant.text):
                         player_result = await session.execute(
-                            select(Player).where(
-                                Player.id == answer.player_id
-                            )
+                            select(Player).where(Player.id == answer.player_id)
                         )
                         player = player_result.scalar_one()
                         username = (
-                            player.username
-                            or f"игрок {player.telegram_id}"
+                            player.username or f"игрок {player.telegram_id}"
                         )
 
                         if username not in players_list:
@@ -595,9 +563,7 @@ class GameAccessor(BaseAccessor):
                         f"{variant.points} очков ({players_str})\n"
                     )
                 else:
-                    message += (
-                        f"{variant.position}. - {variant.points} очков\n"
-                    )
+                    message += f"{variant.position}. - {variant.points} очков\n"
 
             message += f"\n📊 Открыто: {revealed_count}/{len(all_variants)}"
             message += f"\n🎯 Раунд: {game_session.current_question_round}"
@@ -605,9 +571,7 @@ class GameAccessor(BaseAccessor):
             await self.app.store.telegram_api.send_message(
                 chat_id=chat_id, text=message
             )
-            logger.info(
-                "All round results sent to chat %s", chat_id
-            )
+            logger.info("All round results sent to chat %s", chat_id)
 
     async def _ask_admin_decision(
         self, chat_id: int, game_session: GameSession
@@ -620,25 +584,25 @@ class GameAccessor(BaseAccessor):
             f"Создатель игры, выберите действие:"
         )
 
-        buttons = [[
-            {
-                "text": "🔄 Продолжить угадывать",
-                "callback_data": "continue_guessing",
-            },
-            {
-                "text": "➡️ Следующий вопрос",
-                "callback_data": "next_question",
-            },
-        ]]
+        buttons = [
+            [
+                {
+                    "text": "🔄 Продолжить угадывать",
+                    "callback_data": "continue_guessing",
+                },
+                {
+                    "text": "➡️ Следующий вопрос",
+                    "callback_data": "next_question",
+                },
+            ]
+        ]
 
         await self.app.store.telegram_api.send_message(
             chat_id=chat_id,
             text=message,
             reply_markup={"inline_keyboard": buttons},
         )
-        logger.info(
-            "Admin decision requested in chat %s", chat_id
-        )
+        logger.info("Admin decision requested in chat %s", chat_id)
 
     async def continue_guessing(
         self, chat_id: int, admin_telegram_id: int
@@ -661,9 +625,7 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No game in transition for chat %s", chat_id
-                    )
+                    logger.warning("No game in transition for chat %s", chat_id)
                     return False
 
                 game_session = game_session_row[0]
@@ -699,9 +661,7 @@ class GameAccessor(BaseAccessor):
                     game_session.current_question_round,
                 )
 
-                _ = asyncio.create_task(
-                    self._round_timer(chat_id, 45)
-                )
+                _ = asyncio.create_task(self._round_timer(chat_id, 45))
 
                 logger.info(
                     "Game continued in chat %s, round %s",
@@ -714,9 +674,7 @@ class GameAccessor(BaseAccessor):
             logger.exception("Error continuing game")
             return False
 
-    async def next_question(
-        self, chat_id: int, admin_telegram_id: int
-    ) -> bool:
+    async def next_question(self, chat_id: int, admin_telegram_id: int) -> bool:
         """Перейти к следующему вопросу"""
         try:
             logger.info(
@@ -735,9 +693,7 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No game in transition for chat %s", chat_id
-                    )
+                    logger.warning("No game in transition for chat %s", chat_id)
                     return False
 
                 game_session = game_session_row[0]
@@ -753,9 +709,7 @@ class GameAccessor(BaseAccessor):
                     )
                     return False
 
-                await self._show_final_question_results(
-                    chat_id, game_session
-                )
+                await self._show_final_question_results(chat_id, game_session)
                 await self._clear_old_timers(chat_id)
 
                 game_session.current_question_number += 1
@@ -765,17 +719,13 @@ class GameAccessor(BaseAccessor):
                     game_session.current_question_number
                     > game_session.total_questions
                 ):
-                    logger.info(
-                        "Game finished in chat %s", chat_id
-                    )
+                    logger.info("Game finished in chat %s", chat_id)
                     await self._finish_game(chat_id, game_session)
                     return True
 
                 question = await self._get_random_question(session)
                 if not question:
-                    logger.error(
-                        "No active questions for chat %s", chat_id
-                    )
+                    logger.error("No active questions for chat %s", chat_id)
                     return False
 
                 game_session.current_question_id = question.id
@@ -789,9 +739,7 @@ class GameAccessor(BaseAccessor):
                     game_session.current_question_round,
                 )
 
-                _ = asyncio.create_task(
-                    self._round_timer(chat_id, 45)
-                )
+                _ = asyncio.create_task(self._round_timer(chat_id, 45))
 
                 logger.info(
                     "Moved to question %s in chat %s",
@@ -804,23 +752,17 @@ class GameAccessor(BaseAccessor):
             logger.exception("Error moving to next question")
             return False
 
-    async def _finish_game(
-        self, chat_id: int, game_session: GameSession
-    ):
+    async def _finish_game(self, chat_id: int, game_session: GameSession):
         """Завершает игру и показывает результаты"""
         try:
-            logger.info(
-                "Finishing game in chat %s", chat_id
-            )
+            logger.info("Finishing game in chat %s", chat_id)
 
             await self._clear_old_timers(chat_id)
             await self._update_player_stats(game_session.id)
             await self._show_final_results(chat_id, game_session.id)
 
             async with self.app.store.database.session() as session:
-                session_game = await session.get(
-                    GameSession, game_session.id
-                )
+                session_game = await session.get(GameSession, game_session.id)
                 session_game.state = "finished"
                 await session.commit()
 
@@ -831,9 +773,7 @@ class GameAccessor(BaseAccessor):
 
     async def _finish_question(self, chat_id: int):
         try:
-            logger.info(
-                "Finishing question in chat %s", chat_id
-            )
+            logger.info("Finishing question in chat %s", chat_id)
 
             await self._clear_old_timers(chat_id)
 
@@ -847,16 +787,12 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No active game for chat %s", chat_id
-                    )
+                    logger.warning("No active game for chat %s", chat_id)
                     return
 
                 game_session = game_session_row[0]
 
-                await self._show_final_question_results(
-                    chat_id, game_session
-                )
+                await self._show_final_question_results(chat_id, game_session)
 
                 game_session.current_question_number += 1
                 game_session.current_question_round = 1
@@ -865,9 +801,7 @@ class GameAccessor(BaseAccessor):
                     game_session.current_question_number
                     > game_session.total_questions
                 ):
-                    logger.info(
-                        "Game finished in chat %s", chat_id
-                    )
+                    logger.info("Game finished in chat %s", chat_id)
                     await self._finish_game(chat_id, game_session)
                     return
 
@@ -877,14 +811,9 @@ class GameAccessor(BaseAccessor):
                     await session.commit()
                     await self.app.store.telegram_api.send_message(
                         chat_id=chat_id,
-                        text=(
-                            "❌ Не удалось найти вопрос. "
-                            "Игра завершена."
-                        ),
+                        text=("❌ Не удалось найти вопрос. " "Игра завершена."),
                     )
-                    logger.error(
-                        "No active questions for chat %s", chat_id
-                    )
+                    logger.error("No active questions for chat %s", chat_id)
                     return
 
                 game_session.current_question_id = question.id
@@ -898,9 +827,7 @@ class GameAccessor(BaseAccessor):
                     game_session.current_question_round,
                 )
 
-                _ = asyncio.create_task(
-                    self._round_timer(chat_id, 45)
-                )
+                _ = asyncio.create_task(self._round_timer(chat_id, 45))
 
                 logger.info(
                     "Moved to question %s in chat %s",
@@ -932,9 +859,8 @@ class GameAccessor(BaseAccessor):
                 variants_result = await session.execute(
                     select(AnswerVariant)
                     .where(
-                        AnswerVariant.question_id == (
-                            game_session.current_question_id
-                        )
+                        AnswerVariant.question_id
+                        == (game_session.current_question_id)
                     )
                     .order_by(AnswerVariant.position)
                 )
@@ -943,9 +869,8 @@ class GameAccessor(BaseAccessor):
                 answers_result = await session.execute(
                     select(PlayerAnswer).where(
                         PlayerAnswer.session_id == game_session.id,
-                        PlayerAnswer.question_id == (
-                            game_session.current_question_id
-                        ),
+                        PlayerAnswer.question_id
+                        == (game_session.current_question_id),
                     )
                 )
                 all_answers = answers_result.scalars().all()
@@ -975,20 +900,12 @@ class GameAccessor(BaseAccessor):
                             )
                             player = player_result.scalar_one()
                             username = (
-                                player.username
-                                or f"игрок {player.telegram_id}"
+                                player.username or f"игрок {player.telegram_id}"
                             )
 
-                            if (
-                                f"@{username}"
-                                not in players_who_answered
-                            ):
-                                players_who_answered.append(
-                                    f"@{username}"
-                                )
-                                variant_points_earned += (
-                                    answer.points_earned
-                                )
+                            if f"@{username}" not in players_who_answered:
+                                players_who_answered.append(f"@{username}")
+                                variant_points_earned += answer.points_earned
 
                     if players_who_answered:
                         revealed_variants += 1
@@ -997,9 +914,7 @@ class GameAccessor(BaseAccessor):
                             f"✅ {variant.position}. *{variant.text}* - "
                             f"{variant.points} очков\n"
                         )
-                        message += (
-                            f"   👤 Угадали: {players_str}\n"
-                        )
+                        message += f"   👤 Угадали: {players_str}\n"
                         message += (
                             f"   💰 Получено: {variant_points_earned} "
                             f"очков\n\n"
@@ -1016,9 +931,7 @@ class GameAccessor(BaseAccessor):
                 message += (
                     f"• Открыто: {revealed_variants}/{len(all_variants)}\n"
                 )
-                message += (
-                    f"• Заработано: {total_points_earned} очков\n"
-                )
+                message += f"• Заработано: {total_points_earned} очков\n"
                 message += (
                     f"• Раундов: {game_session.current_question_round}\n\n"
                 )
@@ -1038,14 +951,10 @@ class GameAccessor(BaseAccessor):
                 await self.app.store.telegram_api.send_message(
                     chat_id=chat_id, text=message
                 )
-                logger.info(
-                    "Final question results sent to chat %s", chat_id
-                )
+                logger.info("Final question results sent to chat %s", chat_id)
 
         except Exception:
-            logger.exception(
-                "Error showing final question results"
-            )
+            logger.exception("Error showing final question results")
 
     async def _update_player_stats(self, session_id: int):
         """Обновляет статистику игроков после игры"""
@@ -1058,9 +967,7 @@ class GameAccessor(BaseAccessor):
             session_players = session_players_result.scalars().all()
 
             if not session_players:
-                logger.warning(
-                    "No players for session %s", session_id
-                )
+                logger.warning("No players for session %s", session_id)
                 return
 
             player_ids = [sp.player_id for sp in session_players]
@@ -1069,13 +976,10 @@ class GameAccessor(BaseAccessor):
                 select(Player).where(Player.id.in_(player_ids))
             )
             players = {
-                player.id: player
-                for player in players_result.scalars().all()
+                player.id: player for player in players_result.scalars().all()
             }
 
-            winner = max(
-                session_players, key=lambda sp: sp.final_score
-            )
+            winner = max(session_players, key=lambda sp: sp.final_score)
 
             for session_player in session_players:
                 player = players.get(session_player.player_id)
@@ -1101,9 +1005,7 @@ class GameAccessor(BaseAccessor):
                 session.add(player)
 
             await session.commit()
-            logger.info(
-                "Updated stats for %s players", len(session_players)
-            )
+            logger.info("Updated stats for %s players", len(session_players))
 
     async def _show_final_results(self, chat_id: int, session_id: int):
         """Показывает финальные результаты игры"""
@@ -1128,8 +1030,7 @@ class GameAccessor(BaseAccessor):
                 select(Player).where(Player.id.in_(player_ids))
             )
             players_dict = {
-                player.id: player
-                for player in players_result.scalars().all()
+                player.id: player for player in players_result.scalars().all()
             }
 
             message = "🏆 *ФИНАЛЬНЫЕ РЕЗУЛЬТАТЫ ИГРЫ:*\n\n"
@@ -1137,10 +1038,7 @@ class GameAccessor(BaseAccessor):
             for i, session_player in enumerate(session_players, 1):
                 player = players_dict.get(session_player.player_id)
                 if player:
-                    username = (
-                        player.username
-                        or f"игрок {player.telegram_id}"
-                    )
+                    username = player.username or f"игрок {player.telegram_id}"
                     message += (
                         f"{i}. @{username} - "
                         f"{session_player.final_score} очков\n"
@@ -1161,25 +1059,19 @@ class GameAccessor(BaseAccessor):
                         winner_player.username
                         or f"игрок {winner_player.telegram_id}"
                     )
-                    message += (
-                        f"\n🎉 *ПОБЕДИТЕЛЬ: @{winner_username}* 🎉\n\n"
-                    )
+                    message += f"\n🎉 *ПОБЕДИТЕЛЬ: @{winner_username}* 🎉\n\n"
                 else:
                     message += (
                         f"\n🎉 *ПОБЕДИТЕЛЬ: Игрок "
                         f"{winner_session_player.player_id}* 🎉\n\n"
                     )
 
-            message += (
-                "Спасибо за игру! Чтобы начать новую, напишите 'старт'"
-            )
+            message += "Спасибо за игру! Чтобы начать новую, напишите 'старт'"
 
             await self.app.store.telegram_api.send_message(
                 chat_id=chat_id, text=message
             )
-            logger.info(
-                "Final results sent to chat %s", chat_id
-            )
+            logger.info("Final results sent to chat %s", chat_id)
 
     async def _check_admin_rights(
         self, session, session_id: int, telegram_id: int
@@ -1213,9 +1105,7 @@ class GameAccessor(BaseAccessor):
         query = select(Question).where(Question.is_active)
 
         if excluded_question_ids:
-            query = query.where(
-                Question.id.notin_(excluded_question_ids)
-            )
+            query = query.where(Question.id.notin_(excluded_question_ids))
 
         question_result = await session.execute(
             query.order_by(func.random()).limit(1)
@@ -1256,18 +1146,14 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No waiting session in chat %s", chat_id
-                    )
+                    logger.warning("No waiting session in chat %s", chat_id)
                     return False, "no_session"
 
                 game_session = game_session_row[0]
                 logger.info("Found session %s", game_session.id)
 
                 player_result = await session.execute(
-                    select(Player).where(
-                        Player.telegram_id == telegram_id
-                    )
+                    select(Player).where(Player.telegram_id == telegram_id)
                 )
                 player = player_result.scalar_one_or_none()
 
@@ -1283,9 +1169,7 @@ class GameAccessor(BaseAccessor):
                     session.add(player)
                     await session.commit()
                     await session.refresh(player)
-                    logger.info(
-                        "CREATED_NEW_PLAYER: player_id=%s", player.id
-                    )
+                    logger.info("CREATED_NEW_PLAYER: player_id=%s", player.id)
 
                 existing_player_result = await session.execute(
                     select(SessionPlayer).where(
@@ -1322,14 +1206,10 @@ class GameAccessor(BaseAccessor):
                     )
                 )
                 players_count = len(players_count_result.scalars().all())
-                logger.info(
-                    "CURRENT_PLAYERS_COUNT: %s/8", players_count
-                )
+                logger.info("CURRENT_PLAYERS_COUNT: %s/8", players_count)
 
                 if players_count >= 8:
-                    logger.info(
-                        "Auto-starting game in chat %s", chat_id
-                    )
+                    logger.info("Auto-starting game in chat %s", chat_id)
                     success = await self._start_first_question(chat_id)
                     if success:
                         return True, "auto_started"
@@ -1362,9 +1242,7 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No waiting session for chat %s", chat_id
-                    )
+                    logger.warning("No waiting session for chat %s", chat_id)
                     return False, "no_session"
 
                 game_session = game_session_row[0]
@@ -1377,9 +1255,7 @@ class GameAccessor(BaseAccessor):
                 player = player_result.scalar_one_or_none()
 
                 if not player:
-                    logger.warning(
-                        "Player %s not found", admin_telegram_id
-                    )
+                    logger.warning("Player %s not found", admin_telegram_id)
                     return False, "player_not_found"
 
                 admin_check = await session.execute(
@@ -1415,13 +1291,9 @@ class GameAccessor(BaseAccessor):
 
                 success = await self._start_first_question(chat_id)
                 if success:
-                    logger.info(
-                        "Game started by admin in chat %s", chat_id
-                    )
+                    logger.info("Game started by admin in chat %s", chat_id)
                     return True, "started"
-                logger.error(
-                    "Failed to start game in chat %s", chat_id
-                )
+                logger.error("Failed to start game in chat %s", chat_id)
                 return False, "start_failed"
 
         except Exception:
@@ -1450,9 +1322,7 @@ class GameAccessor(BaseAccessor):
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No active game session in chat %s", chat_id
-                    )
+                    logger.warning("No active game session in chat %s", chat_id)
                     return {
                         "success": False,
                         "message": "Нет активной сессии",
@@ -1461,16 +1331,12 @@ class GameAccessor(BaseAccessor):
                 game_session = game_session_row[0]
 
                 player_result = await session.execute(
-                    select(Player).where(
-                        Player.telegram_id == telegram_id
-                    )
+                    select(Player).where(Player.telegram_id == telegram_id)
                 )
                 player = player_result.scalar_one_or_none()
 
                 if not player:
-                    logger.warning(
-                        "Player %s not found", telegram_id
-                    )
+                    logger.warning("Player %s not found", telegram_id)
                     return {
                         "success": False,
                         "message": "Игрок не найден",
@@ -1497,12 +1363,10 @@ class GameAccessor(BaseAccessor):
                     select(PlayerAnswer).where(
                         PlayerAnswer.player_id == player.id,
                         PlayerAnswer.session_id == game_session.id,
-                        PlayerAnswer.question_id == (
-                            game_session.current_question_id
-                        ),
-                        PlayerAnswer.round == (
-                            game_session.current_question_round
-                        ),
+                        PlayerAnswer.question_id
+                        == (game_session.current_question_id),
+                        PlayerAnswer.round
+                        == (game_session.current_question_round),
                     )
                 )
                 if existing_answer.first():
@@ -1532,23 +1396,17 @@ class GameAccessor(BaseAccessor):
                     telegram_id,
                 )
 
-                all_answered = await self._check_all_players_answered(
-                    chat_id
-                )
+                all_answered = await self._check_all_players_answered(chat_id)
                 if all_answered:
                     logger.info(
                         "All players answered in chat %s, finishing round",
                         chat_id,
                     )
-                    _ = asyncio.create_task(
-                        self._finish_round(chat_id)
-                    )
+                    _ = asyncio.create_task(self._finish_round(chat_id))
 
                 return {
                     "success": True,
-                    "message": (
-                        "✅ Ответ принят! Ждем остальных игроков..."
-                    ),
+                    "message": ("✅ Ответ принят! Ждем остальных игроков..."),
                 }
 
         except Exception:
@@ -1583,12 +1441,9 @@ class GameAccessor(BaseAccessor):
             answers_result = await session.execute(
                 select(PlayerAnswer).where(
                     PlayerAnswer.session_id == game_session.id,
-                    PlayerAnswer.question_id == (
-                        game_session.current_question_id
-                    ),
-                    PlayerAnswer.round == (
-                        game_session.current_question_round
-                    ),
+                    PlayerAnswer.question_id
+                    == (game_session.current_question_id),
+                    PlayerAnswer.round == (game_session.current_question_round),
                 )
             )
             answered_players = answers_result.scalars().all()
@@ -1609,36 +1464,32 @@ class GameAccessor(BaseAccessor):
 
             return all_answered
 
-    async def stop_game(
-        self, chat_id: int, user_id: int
-    ) -> tuple[bool, str]:
+    async def stop_game(self, chat_id: int, user_id: int) -> tuple[bool, str]:
         """Останавливает игру и показывает результаты"""
         try:
-            logger.info(
-                "Stopping game in chat %s by user %s", chat_id, user_id
-            )
+            logger.info("Stopping game in chat %s by user %s", chat_id, user_id)
 
             async with self.app.store.database.session() as session:
                 game_session_result = await session.execute(
                     select(GameSession)
                     .where(
                         GameSession.chat_id == chat_id,
-                        GameSession.state.in_([
-                            "waiting_players",
-                            "question_start",
-                            "accepting_answers",
-                            "showing_results",
-                            "round_transition",
-                        ]),
+                        GameSession.state.in_(
+                            [
+                                "waiting_players",
+                                "question_start",
+                                "accepting_answers",
+                                "showing_results",
+                                "round_transition",
+                            ]
+                        ),
                     )
                     .order_by(GameSession.id.desc())
                 )
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
-                    logger.warning(
-                        "No active game to stop in chat %s", chat_id
-                    )
+                    logger.warning("No active game to stop in chat %s", chat_id)
                     return False, "no_active_game"
 
                 game_session = game_session_row[0]
@@ -1649,9 +1500,7 @@ class GameAccessor(BaseAccessor):
                 player = player_result.scalar_one_or_none()
 
                 if not player:
-                    logger.warning(
-                        "Player %s not found", user_id
-                    )
+                    logger.warning("Player %s not found", user_id)
                     return False, "player_not_found"
 
                 admin_check = await session.execute(
@@ -1679,9 +1528,7 @@ class GameAccessor(BaseAccessor):
                     )
 
                     await self._update_player_stats(game_session.id)
-                    await self._show_final_results(
-                        chat_id, game_session.id
-                    )
+                    await self._show_final_results(chat_id, game_session.id)
 
                     stop_message = (
                         f"🛑 *Игра досрочно завершена создателем!*\n\n"
@@ -1736,10 +1583,7 @@ class GameAccessor(BaseAccessor):
                 message = "🏆 *ТОП ИГРОКОВ:*\n\n"
 
                 for i, player in enumerate(players, 1):
-                    username = (
-                        player.username
-                        or f"игрок {player.telegram_id}"
-                    )
+                    username = player.username or f"игрок {player.telegram_id}"
                     win_rate = (
                         (player.wins / player.games_played * 100)
                         if player.games_played > 0
@@ -1763,21 +1607,21 @@ class GameAccessor(BaseAccessor):
     async def get_game_status(self, chat_id: int) -> str:
         """Возвращает статус текущей игры"""
         try:
-            logger.info(
-                "Getting game status for chat %s", chat_id
-            )
+            logger.info("Getting game status for chat %s", chat_id)
 
             async with self.app.store.database.session() as session:
                 game_session_result = await session.execute(
                     select(GameSession).where(
                         GameSession.chat_id == chat_id,
-                        GameSession.state.in_([
-                            "waiting_players",
-                            "question_start",
-                            "accepting_answers",
-                            "showing_results",
-                            "round_transition",
-                        ]),
+                        GameSession.state.in_(
+                            [
+                                "waiting_players",
+                                "question_start",
+                                "accepting_answers",
+                                "showing_results",
+                                "round_transition",
+                            ]
+                        ),
                     )
                 )
                 game_session_row = game_session_result.first()
@@ -1822,17 +1666,14 @@ class GameAccessor(BaseAccessor):
                     ):
                         player = session_player.player
                         username = (
-                            player.username
-                            or f"игрок {player.telegram_id}"
+                            player.username or f"игрок {player.telegram_id}"
                         )
                         status += (
                             f"• @{username}: "
                             f"{session_player.final_score} очков\n"
                         )
 
-                logger.info(
-                    "Status generated for chat %s", chat_id
-                )
+                logger.info("Status generated for chat %s", chat_id)
                 return status
 
         except Exception:

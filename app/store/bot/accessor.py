@@ -18,7 +18,6 @@ class BotAccessor:
         self.poller = None
 
     async def connect(self):
-
         self.app.store.telegram_api = TelegramAPI(
             self.app.config.telegram.token
         )
