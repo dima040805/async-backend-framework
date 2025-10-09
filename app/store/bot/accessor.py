@@ -3,6 +3,7 @@ import typing
 
 from app.store.bot.manager import BotManager
 from app.store.bot.poller import Poller
+from app.store.telegram.api import TelegramAPI
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -17,7 +18,6 @@ class BotAccessor:
         self.poller = None
 
     async def connect(self):
-        from app.store.telegram.api import TelegramAPI
 
         self.app.store.telegram_api = TelegramAPI(
             self.app.config.telegram.token

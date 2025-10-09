@@ -6,5 +6,6 @@ logger = logging.getLogger(__name__)
 
 
 class UserAccessor(BaseAccessor):
-    async def get_or_create_user(self, telegram_id: int, username: str = None):
+    async def get_or_create_user(self, telegram_id: int, 
+                                 username: str | None = None):
         pass

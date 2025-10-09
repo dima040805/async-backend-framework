@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import typing
-from typing import Optional
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -14,7 +13,7 @@ class Poller:
         self.app = app
         self.manager = manager
         self.is_running = False
-        self.task: Optional[asyncio.Task] = None
+        self.task: asyncio.Task | None = None
         self.offset = 0
 
     async def start(self):
@@ -46,6 +45,5 @@ class Poller:
                 polling_interval = self.app.config.telegram.polling_interval
                 await asyncio.sleep(polling_interval)
 
-            except Exception as e:
-                logger.error(f"Polling error: {e}")
+            except Exception:
                 await asyncio.sleep(5)

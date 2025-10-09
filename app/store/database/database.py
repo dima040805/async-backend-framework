@@ -1,6 +1,7 @@
 import logging
 import typing
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -17,7 +18,7 @@ class Database:
     async def connect(self):
         db_config = self.app.config.database
         database_url = f"postgresql+asyncpg://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.database}"
-        
+
         self.engine = create_async_engine(
             database_url,
             echo=False,  # Убрали echo=self.app.config.debug

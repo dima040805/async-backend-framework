@@ -1,12 +1,3 @@
-from aiohttp.web import (
-    Application as AiohttpApplication,
-    Request as AiohttpRequest,
-    View as AiohttpView,
-)
-
-__all__ = ("Application", "Request", "View")
-
-
 import typing
 
 from aiohttp.web import (
@@ -28,26 +19,14 @@ class Application(AiohttpApplication):
 
 
 class Request(AiohttpRequest):
+
     @property
     def app(self) -> "Application":
         return super().app()
 
 
 class View(AiohttpView):
-    @property
-    def request(self) -> Request:
-        return super().request
 
-    @property
-    def store(self):
-        return self.request.app.store
-
-    @property
-    def data(self) -> dict:
-        return self.request.get("data", {})
-
-
-class View(AiohttpView):
     @property
     def request(self) -> Request:
         return super().request
@@ -62,6 +41,7 @@ class View(AiohttpView):
 
 
 def setup_app(config_path: str) -> Application:
+        # ruff: noqa: PLC0415
     from aiohttp_apispec import setup_aiohttp_apispec
     from aiohttp_session import setup as session_setup
     from aiohttp_session.cookie_storage import EncryptedCookieStorage
@@ -74,7 +54,6 @@ def setup_app(config_path: str) -> Application:
     app = Application()
     setup_config(app, config_path)
 
-    # Используем app.config.session.key
     session_setup(app, EncryptedCookieStorage(app.config.session.key))
 
     setup_routes(app)
@@ -84,13 +63,11 @@ def setup_app(config_path: str) -> Application:
     setup_middlewares(app)
     setup_store(app)
 
-    # Запускаем бота после настройки store
     async def start_bot(app):
         await app.store.bot.connect()
 
     app.on_startup.append(start_bot)
 
-    # Останавливаем бота при завершении
     async def stop_bot(app):
         await app.store.bot.disconnect()
 

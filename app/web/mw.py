@@ -14,8 +14,7 @@ if typing.TYPE_CHECKING:
 @middleware
 async def error_handling_middleware(request, handler):
     try:
-        response = await handler(request)
-        return response
+        return await handler(request)
     except HTTPUnprocessableEntity as e:
         return error_json_response(
             http_status=400,
