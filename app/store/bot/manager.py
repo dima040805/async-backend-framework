@@ -215,14 +215,20 @@ class BotManager:
     ):
         try:
             logger.info("User %s joining game in chat %s", user_id, chat_id)
-            status = await self.app.store.game_accessor.add_player_to_session(
+            success, status = await self.app.store.game_accessor.add_player_to_session(
                 chat_id, user_id, username
             )
 
+            # Всегда отвечаем на callback query
+            if success:
+                response_text = "✅ Вы присоединились к игре!"  
+            else:
+                response_text = "❌ Не удалось присоединиться"
             await self.app.store.telegram_api.answer_callback_query(
-                callback_query_id, "✅ Вы присоединились к игре!"
+                callback_query_id, response_text
             )
 
+            # Отправляем сообщение в чат в зависимости от статуса
             response_messages = {
                 "auto_started": (
                     f"🎉 @{username} присоединился к игре!\n\n"
@@ -232,9 +238,7 @@ class BotManager:
                     f"🎉 @{username} присоединился к игре!\n\n"
                     f"🏁 Игра начинается!"
                 ),
-                "joined": await self._get_players_count_message(
-                    chat_id, username
-                ),
+                "joined": await self._get_players_count_message(chat_id, username),
                 "no_session": (
                     "❌ Нет активной игры в этом чате. "
                     "Начните игру командой 'старт'"
@@ -246,7 +250,8 @@ class BotManager:
                 status, "❌ Не удалось присоединиться к игре."
             )
 
-            if status in ["joined", "auto_started", "started"]:
+            # ВСЕГДА отправляем сообщение в чат, кроме случая когда игрок уже присоединился
+            if status != "already_joined":
                 await self.app.store.telegram_api.send_message(
                     chat_id=chat_id, text=response
                 )
@@ -255,6 +260,9 @@ class BotManager:
 
         except Exception:
             logger.exception("Error joining game")
+            await self.app.store.telegram_api.answer_callback_query(
+                callback_query_id, "❌ Ошибка при присоединении"
+            )
             await self._send_error_message(
                 chat_id, "Произошла ошибка при присоединении к игре"
             )
@@ -346,17 +354,16 @@ class BotManager:
 
     async def _handle_leaderboard_message(self, chat_id: int):
         try:
-            leaderboard = (
-                await self.app.store.game_accessor.get_global_leaderboard()
-            )
+            leaderboard = await self.app.store.game_accessor.get_global_leaderboard()
             await self.app.store.telegram_api.send_message(
-                chat_id=chat_id, text=leaderboard
+                chat_id=chat_id, 
+                text=leaderboard
             )
             logger.info("Leaderboard sent to chat %s", chat_id)
-        except Exception:
-            logger.exception("Error sending leaderboard")
+        except Exception as e:
+            logger.exception("Error sending leaderboard to chat %s: %s", chat_id, str(e))
             await self._send_error_message(
-                chat_id, "Ошибка при загрузке топа игроков"
+                chat_id, "❌ Ошибка при загрузке топа игроков"
             )
 
     async def _handle_status(self, chat_id: int, callback_query_id: str):
@@ -409,7 +416,7 @@ class BotManager:
     ):
         try:
             logger.info("User %s stopping game in chat %s", user_id, chat_id)
-            status = await self.app.store.game_accessor.stop_game(
+            success, status = await self.app.store.game_accessor.stop_game(
                 chat_id, user_id
             )
 

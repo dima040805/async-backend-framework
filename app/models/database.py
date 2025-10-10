@@ -154,3 +154,41 @@ class PlayerAnswer(Base):
     player: Mapped["Player"] = relationship(back_populates="answers")
     session: Mapped["GameSession"] = relationship(back_populates="answers")
     question: Mapped["Question"] = relationship("Question")
+
+
+class WebAdmin(Base):
+    __tablename__ = "web_admins"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    permissions: Mapped[str] = mapped_column(String(50), default="admin")
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow
+    )
+
+    def __repr__(self) -> str:
+        return f"WebAdmin(id={self.id}, email={self.email})"
+
+
+class SessionAdmin(Base):
+    __tablename__ = "session_admins"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    player_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("players.id"), nullable=False
+    )
+    session_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("game_sessions.id"), nullable=False
+    )
+    is_super_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow
+    )
+
+    player: Mapped["Player"] = relationship("Player")
+    session: Mapped["GameSession"] = relationship("GameSession")
+
+    def __repr__(self) -> str:
+        return f"SessionAdmin(player_id={self.player_id}, session_id={self.session_id})"
