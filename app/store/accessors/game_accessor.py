@@ -1562,7 +1562,7 @@ class GameAccessor(BaseAccessor):
                 )
                 return (
                     True,
-                    "stopped"
+                    "stopped_with_results"
                     if game_session.state != "waiting_players"
                     else "stopped",
                 )

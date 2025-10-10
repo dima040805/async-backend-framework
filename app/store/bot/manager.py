@@ -430,7 +430,7 @@ class BotManager:
             }
 
             response = response_messages.get(
-                status, "❌ Не удалось остановить игру."
+                status
             )
             await self.app.store.telegram_api.send_message(
                 chat_id=chat_id, text=response
