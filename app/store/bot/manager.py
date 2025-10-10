@@ -215,20 +215,22 @@ class BotManager:
     ):
         try:
             logger.info("User %s joining game in chat %s", user_id, chat_id)
-            success, status = await self.app.store.game_accessor.add_player_to_session(
+            (
+                success,
+                status,
+            ) = await self.app.store.game_accessor.add_player_to_session(
                 chat_id, user_id, username
             )
 
-            # Всегда отвечаем на callback query
             if success:
-                response_text = "✅ Вы присоединились к игре!"  
+                response_text = "✅ Вы присоединились к игре!"
             else:
                 response_text = "❌ Не удалось присоединиться"
+
             await self.app.store.telegram_api.answer_callback_query(
                 callback_query_id, response_text
             )
 
-            # Отправляем сообщение в чат в зависимости от статуса
             response_messages = {
                 "auto_started": (
                     f"🎉 @{username} присоединился к игре!\n\n"
@@ -238,7 +240,9 @@ class BotManager:
                     f"🎉 @{username} присоединился к игре!\n\n"
                     f"🏁 Игра начинается!"
                 ),
-                "joined": await self._get_players_count_message(chat_id, username),
+                "joined": await self._get_players_count_message(
+                    chat_id, username
+                ),
                 "no_session": (
                     "❌ Нет активной игры в этом чате. "
                     "Начните игру командой 'старт'"
@@ -250,7 +254,6 @@ class BotManager:
                 status, "❌ Не удалось присоединиться к игре."
             )
 
-            # ВСЕГДА отправляем сообщение в чат, кроме случая когда игрок уже присоединился
             if status != "already_joined":
                 await self.app.store.telegram_api.send_message(
                     chat_id=chat_id, text=response
@@ -291,9 +294,7 @@ class BotManager:
                     f"🎉 @{username} присоединился к игре! "
                     f"👥 Игроков: {players_count}/8"
                 )
-            return (
-                f"🎉 @{username} не присоединился к игре! " f"👥 Игроков: 0/8"
-            )
+            return f"🎉 @{username} не присоединился к игре! 👥 Игроков: 0/8"
 
     async def _handle_continue_guessing(
         self, chat_id: int, user_id: int, username: str, callback_query_id: str
@@ -354,14 +355,14 @@ class BotManager:
 
     async def _handle_leaderboard_message(self, chat_id: int):
         try:
-            leaderboard = await self.app.store.game_accessor.get_global_leaderboard()
+            leaderboard = (
+                await self.app.store.game_accessor.get_global_leaderboard()
+            )
             await self.app.store.telegram_api.send_message(
-                chat_id=chat_id, 
-                text=leaderboard
+                chat_id=chat_id, text=leaderboard
             )
             logger.info("Leaderboard sent to chat %s", chat_id)
-        except Exception as e:
-            logger.exception("Error sending leaderboard to chat %s: %s", chat_id, str(e))
+        except Exception:
             await self._send_error_message(
                 chat_id, "❌ Ошибка при загрузке топа игроков"
             )
@@ -416,7 +417,7 @@ class BotManager:
     ):
         try:
             logger.info("User %s stopping game in chat %s", user_id, chat_id)
-            success, status = await self.app.store.game_accessor.stop_game(
+            status = await self.app.store.game_accessor.stop_game(
                 chat_id, user_id
             )
 
@@ -426,12 +427,12 @@ class BotManager:
                 ),
                 "no_active_game": "❌ Нет активной игры для остановки.",
                 "player_not_found": "❌ Игрок не найден.",
-                "not_admin": "❌ Только создатель игры может остановить игру.",
+                "not_admin": (
+                    "❌ Только создатель игры может остановить игру."
+                ),
             }
 
-            response = response_messages.get(
-                status
-            )
+            response = response_messages.get(status)
             await self.app.store.telegram_api.send_message(
                 chat_id=chat_id, text=response
             )

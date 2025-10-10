@@ -191,4 +191,7 @@ class SessionAdmin(Base):
     session: Mapped["GameSession"] = relationship("GameSession")
 
     def __repr__(self) -> str:
-        return f"SessionAdmin(player_id={self.player_id}, session_id={self.session_id})"
+        return (
+            f"SessionAdmin(player_id={self.player_id}, "
+            f"session_id={self.session_id})"
+        )

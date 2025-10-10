@@ -14,4 +14,6 @@ def setup_admin_routes(app):
     app.router.add_view("/admin.sessions", AdminSessionsView)
     app.router.add_view("/admin.players", AdminPlayersView)
     app.router.add_view("/admin.questions", AdminQuestionsView)
-    app.router.add_view("/admin.questions/{question_id}", AdminQuestionDetailView)
+    app.router.add_view(
+        "/admin.questions/{question_id}", AdminQuestionDetailView
+    )

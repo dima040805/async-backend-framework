@@ -279,7 +279,9 @@ class GameAccessor(BaseAccessor):
                     )
                     return False
 
-                question = await self._get_random_question(session, game_session.id)
+                question = await self._get_random_question(
+                    session, game_session.id
+                )
                 if not question:
                     logger.error("No active questions for chat %s", chat_id)
                     return False
@@ -343,8 +345,9 @@ class GameAccessor(BaseAccessor):
                 game_session_result = await session.execute(
                     select(GameSession).where(
                         GameSession.chat_id == chat_id,
-                        GameSession.state == 'accepting_answers'                
-                        ))
+                        GameSession.state == "accepting_answers",
+                    )
+                )
                 game_session_row = game_session_result.first()
 
                 if not game_session_row:
@@ -721,7 +724,9 @@ class GameAccessor(BaseAccessor):
                     await self._finish_game(chat_id, game_session)
                     return True
 
-                question = await self._get_random_question(session, game_session.id)
+                question = await self._get_random_question(
+                    session, game_session.id
+                )
                 if not question:
                     logger.error("No active questions for chat %s", chat_id)
                     return False
@@ -779,7 +784,10 @@ class GameAccessor(BaseAccessor):
                 game_session_result = await session.execute(
                     select(GameSession).where(
                         GameSession.chat_id == chat_id,
-                        GameSession.state.in_(['showing_results', 'round_transition'])                    )
+                        GameSession.state.in_(
+                            ["showing_results", "round_transition"]
+                        ),
+                    )
                 )
                 game_session_row = game_session_result.first()
 
@@ -802,7 +810,9 @@ class GameAccessor(BaseAccessor):
                     await self._finish_game(chat_id, game_session)
                     return
 
-                question = await self._get_random_question(session, game_session.id)
+                question = await self._get_random_question(
+                    session, game_session.id
+                )
                 if not question:
                     game_session.state = "finished"
                     await session.commit()
@@ -1093,13 +1103,15 @@ class GameAccessor(BaseAccessor):
         return admin_check.first() is not None
 
     async def _get_random_question(
-        self, session, session_id: int = None, excluded_question_ids: list[int] | None = None
+        self,
+        session,
+        session_id: int | None = None,
+        excluded_question_ids: list[int] | None = None,
     ) -> Question | None:
         """Получает случайный активный вопрос, исключая уже использованные"""
         if excluded_question_ids is None:
             excluded_question_ids = []
 
-        # Если передан session_id, получаем вопросы которые уже использовались в этой сессии
         if session_id:
             used_questions_result = await session.execute(
                 select(PlayerAnswer.question_id)
@@ -1588,15 +1600,22 @@ class GameAccessor(BaseAccessor):
                 logger.info("Found %s players for leaderboard", len(players))
 
                 if not players:
-                    return "📊 Пока нет игроков в рейтинге.\n\nСыграйте первую игру, чтобы появиться в рейтинге!"
+                    return (
+                        "📊 Пока нет игроков в рейтинге.\n\n"
+                        "Сыграйте первую игру, чтобы появиться в рейтинге!"
+                    )
 
                 message = "🏆 *ТОП ИГРОКОВ:*\n\n"
 
                 for i, player in enumerate(players, 1):
-                    # Экранируем специальные символы Markdown
                     username = player.username or f"игрок {player.telegram_id}"
-                    safe_username = username.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
-                    
+                    safe_username = (
+                        username.replace("_", "\\_")
+                        .replace("*", "\\*")
+                        .replace("`", "\\`")
+                        .replace("[", "\\[")
+                    )
+
                     win_rate = (
                         (player.wins / player.games_played * 100)
                         if player.games_played > 0
@@ -1611,13 +1630,12 @@ class GameAccessor(BaseAccessor):
                     )
 
                 message += "_Рейтинг обновляется после каждой игры_"
-                
+
                 logger.info("Global leaderboard generated successfully")
                 return message
 
-        except Exception as e:
-            logger.exception("Error generating leaderboard: %s", str(e))
-            return "❌ Ошибка при загрузке топа игроков\n\nПопробуйте позже."
+        except Exception:
+            return "❌ Ошибка при загрузке топа игроков\n\n" "Попробуйте позже."
 
     async def get_game_status(self, chat_id: int) -> str:
         """Возвращает статус текущей игры"""
@@ -1664,8 +1682,9 @@ class GameAccessor(BaseAccessor):
 
                 status = (
                     f"📊 *СТАТУС ИГРЫ:*\n\n"
-                    f"• Состояние: {state_names.get(game_session.state, 
-                                                    game_session.state)}\n"
+                    f"• Состояние: {state_names.get(
+                        game_session.state, game_session.state
+                    )}\n"
                     f"• Игроков: {len(players)}\n"
                     f"• Вопрос: {game_session.current_question_number}/"
                     f"{game_session.total_questions}\n"
