@@ -21,7 +21,12 @@ services:
     container_name: hundred_to_one_app
     environment:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-      - DATABASE_URL=postgresql+asyncpg://game_user:game_password@postgres:5432/hundred_to_one
+      - DATABASE_HOST=postgres
+      - DATABASE_USER=game_user
+      - DATABASE_PASSWORD=game_password
+      - DATABASE_NAME=hundred_to_one
+      - SESSION_KEY=${SESSION_KEY}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - DEBUG=${DEBUG}
     ports:
       - "8000:8000"

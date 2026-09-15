@@ -1,136 +1,83 @@
-# Памятка по работе с проектом
+# «100 к 1» — Telegram-бот на aiohttp
 
-## Начало работы с проектом
-Для начала работы с проектом необходимо создать репозиторий по [шаблону](https://github.com/ktsstudio/backend-school-template-project). Для этого используйте кнопку "Use this template".
+[![Check homework](https://github.com/dima040805/async-backend-framework/actions/workflows/main.yaml/badge.svg)](https://github.com/dima040805/async-backend-framework/actions/workflows/main.yaml)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![aiohttp](https://img.shields.io/badge/aiohttp-3.9-2C5BB4?logo=aiohttp&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
 
-<img width="579" alt="image" src="https://github.com/ktsstudio/backend-school-template-project/assets/79798334/1566de18-2be5-4570-b327-fa212f909ab0">
+Многопользовательская игра «100 к 1» в Telegram-чатах. Игроки собираются в сессию,
+угадывают самые популярные ответы на вопросы, бот ведёт счёт и таблицу лидеров.
+Для администратора есть отдельное HTTP API: вопросы и варианты ответов, игровые сессии, игроки.
 
-После этого его можно локально клонировать себе на компьютер:
+Проект сделан в школе бэкенд-разработки KTS на основе
+[шаблона школы](https://github.com/ktsstudio/backend-school-template-project).
 
-``` sh
-git clone <ссылка на репозиторий>
+## Возможности
+
+- Создание игры в чате, присоединение игроков через inline-кнопки и старт раунда.
+- Приём ответов, подсчёт очков, переход к следующему вопросу, остановка игры.
+- Таблица лидеров и статус текущей игры.
+- Admin API на aiohttp: вход по cookie-сессии, CRUD вопросов, просмотр сессий и игроков, Swagger на `/docs`.
+- Получение апдейтов Telegram через long polling в фоновой задаче.
+
+## Архитектура
+
+```mermaid
+flowchart LR
+    TG["Telegram Bot API"] <-->|long polling| P["Poller"]
+    P --> M["BotManager<br/>игровая логика"]
+    M --> ACC["Accessors<br/>Game / Session / User / Admin"]
+    ADM["Admin API<br/>aiohttp views"] --> ACC
+    ACC --> DB[("PostgreSQL<br/>SQLAlchemy 2 async + asyncpg")]
 ```
 
----
-## Ветки dev и main
-После того как скопируете репозиторий, скорее всего, вы будете находиться в main-ветке. 
+Модели: `Player`, `GameSession`, `SessionPlayer`, `Question`, `AnswerVariant`, `PlayerAnswer`, `WebAdmin`, `SessionAdmin` (`app/models/database.py`).
 
-Как правило, ветка `main` (`master`) содержит в себе _production-ready_ код, т.е. именно из этой ветки проект будет катиться. Поэтому сама разработка из этой ветки обычно не ведется, туда делают merge финальных изменений.
+## Запуск
 
-Создадим ветку dev:
-``` sh
-git checkout -b dev
+```bash
+cp .env.example .env        # укажите TELEGRAM_TOKEN и SESSION_KEY
+docker compose up --build
 ```
 
-Dev — чаще всего общая тестовая ветка. От `dev-ветки` ответвляются `feature-ветки`, в которые добавляется новая функциональность, тестируется, проходит ревью и "сливается" в `dev-ветку`.
+Локально:
 
-Создадим `feature`-ветку:
-``` sh
-git checkout -b <<название ветки>>
-```
-
-После чего создается [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
-
-`Pull request (PR)` позволяет другим разработчикам провести ревью и оставить комментарии к написанному коду, прежде чем проверять его и делать релиз.
-
-
----
-## Работа в репозитории
-
-### Gitignore
-
-Файл .gitignore содержит информацию о том, какие файлы не следует сохранять в удаленный репозиторий – локальные конфиги, файлы библиотек, специфичные файлы IDE или операционной системы.  
-
-Самый простой способ составить подходящий `.gitignore` файл — воспользоваться ресурсом [gitignore.io](https://www.toptal.com/developers/gitignore/)
-
-
-Обратите внимание, что в шаблоне проекта уже присутствует файл `.gitignore`. Остается убедиться, что у вас нет каких-то дополнительных файлов, которые следует туда добавить.
-
----
-### Виртуальное окружение
-
-#### Создание виртуального окружения
-
-Виртуальное окружение позволяет разделять проекты, зависимости и даже версии языка.
-
-**Пример.** Есть два проекта. Один использует библиотеку `example` версии 1, второй – версии 2. Они не могут существовать одновременно, и версии могут конфликтовать из-за каких-то других зависимостей. Поэтому мы создаем два виртуальных окружения, каждое для своего проекта. `PyCharm` может создавать их автоматически. `Python` будет видеть только библиотеки из своего виртуального окружения, что существенно облегчит сосуществование множества проектов на одном компьютере.
-
-**Создадим:**
-``` sh
-python -m venv <название окружения>
-```
-
-> Принято называть окружение `env` или `venv` -– `([virtual] environment)`.
-
-Задать версию языка для виртуального окружения, например 3.12:
-```
-python3.12 -m venv <название окружения>
-```
-
-> Обратите внимание, что для этого нужно чтобы эта версия была установлена в системе.
-
-
-#### Активация
-**Для Linux/MacOS:**
-``` sh
-source <название окружения>/bin/activate
-```
-
-**Для Windows:**
-``` sh
-<название окружения>\Scripts\activate.bat
-```
-
----
-### Зависимости
-В файл `requirements.txt` принято записывать зависимости проекта – список библиотек и их версий, без которых проект не сможет запуститься. Добавляя в проект использование новой библиотеки, обязательно нужно записать ее в `requirements.txt`. При релизе зависимости устанавливаются из же этого файла.
-
-Пример файла:
-```requirements.txt
-aiohttp==3.8.1
-black==22.6.0
-freezegun==1.2.1
-pytest==7.1.2
-pytest-aiohttp==1.0.4
-```
-
-Если в новой версии из библиотеки будет удалено что-то важное для проекта, то ничего не сломается, потому что мы фиксируемся на старой версии. В дальнейшем мы можем вручную обновить версию и сразу проследить, что при обновлении все работает как нужно. Либо что-то починить, если сломалось.
-
-Установить все необходимые библиотеки можно при помощи команды…
-```sh
-pip install <библиотека>
-```
-
-…либо:
-```sh
+```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+export TELEGRAM_TOKEN=...
+python main.py
 ```
 
-Лучше всего ставить библиотеки в виртуальное окружение.
+Swagger admin API: http://localhost:8000/docs
 
----
-### Ruff
-[Библиотека](https://docs.astral.sh/ruff/) для автоматического форматирования кода и проверки его на ошибки. Рекомендуется использовать, чтобы код был читаемым и соответствовал `pep-8`. Для применения потребуется поставить библиотеку в виртуальное окружение.
+## Конфигурация
 
-**Отформатировать код:**
-```sh
-ruff format  
+Базовые значения лежат в `etc/config.yaml`. Секреты в репозиторий не кладутся —
+они задаются переменными окружения, которые перекрывают файл:
+
+| Переменная | Поле конфига |
+|---|---|
+| `TELEGRAM_TOKEN` | `telegram.token` |
+| `SESSION_KEY` | `session.key` (32 байта, urlsafe base64) |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | `admin.email`, `admin.password` |
+| `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME` | `database.*` |
+
+## Admin API
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| POST | `/admin.login` | вход администратора |
+| GET | `/admin.current` | текущий администратор |
+| GET | `/admin.sessions` | игровые сессии |
+| GET | `/admin.players` | игроки |
+| GET / POST | `/admin.questions` | список и создание вопросов |
+| PATCH | `/admin.questions/{question_id}` | изменение вопроса |
+
+## Качество кода
+
+```bash
+ruff format --check && ruff check --no-fix
 ```
 
-**Проверить код**
-```sh
-ruff check --fix  
-```
-
-В файле `pyproject.toml` можно сконфигурировать библиотеку. 
-
-Например:
-```toml
-[tool.ruff]
-line-length = 80
-indent-width = 4
-target-version = "py312"
-```
-
-> Обратите внимание, что в `pyproject.toml` для вас уже добавлена рекомендуемая конфигурация. 
-> По договоренности с вашим ментором конфигурацию можно отредактировать.
+Проверка запускается в GitHub Actions на каждый push.

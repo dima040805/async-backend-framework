@@ -6,7 +6,7 @@ web:
 
 admin:
   email: "admin@100k1.com"
-  password: "admin123"
+  password: "change-me"  # ADMIN_PASSWORD
 
 sentry:
   dsn: ""
@@ -22,8 +22,8 @@ database:
   database: "hundred_to_one"
 
 session:
-  key: "3gk3GrGEC3dd98NGQLXOB-GMPS0iDdrOgpmvkaEqyas="
+  key: "GA3tS842NyGonGJYYc31CKILfHMSIuIXZO1bHbtIDHc="  # dev-only, override with SESSION_KEY
 
 telegram:
-  token: "8036402531:AAFWXw80EIf08zaGmsAZji8KE8wpmohj8qc"
+  token: ""  # TELEGRAM_TOKEN
   polling_interval: 1

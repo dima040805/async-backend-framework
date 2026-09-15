@@ -1,3 +1,4 @@
+import os
 import typing
 from dataclasses import dataclass
 
@@ -42,9 +43,29 @@ class Config:
     debug: bool = False
 
 
+ENV_OVERRIDES = {
+    ("telegram", "token"): "TELEGRAM_TOKEN",
+    ("session", "key"): "SESSION_KEY",
+    ("admin", "email"): "ADMIN_EMAIL",
+    ("admin", "password"): "ADMIN_PASSWORD",
+    ("database", "host"): "DATABASE_HOST",
+    ("database", "user"): "DATABASE_USER",
+    ("database", "password"): "DATABASE_PASSWORD",
+    ("database", "database"): "DATABASE_NAME",
+}
+
+
+def apply_env_overrides(raw_config: dict) -> dict:
+    for (section, key), env_name in ENV_OVERRIDES.items():
+        value = os.environ.get(env_name)
+        if value:
+            raw_config.setdefault(section, {})[key] = value
+    return raw_config
+
+
 def setup_config(app: "Application", config_path: str):
     with open(config_path, "r") as f:
-        raw_config = yaml.safe_load(f)
+        raw_config = apply_env_overrides(yaml.safe_load(f))
 
     app.config = Config(
         session=SessionConfig(**raw_config["session"]),
